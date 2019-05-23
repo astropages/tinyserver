@@ -1,17 +1,16 @@
 # tinyserver
 GO并发服务器框架
 
-Demo
+Demo：
 
-— demoServer.go
+- demoServer.go
 
-— config
-
-​	 — tinyserver.json
-
+- config
+  - tinyserver.json
 
 
-demoServe.go
+
+*demoServe.go*
 
 ```go
 /*
