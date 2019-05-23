@@ -16,5 +16,5 @@ type IConnection interface {
 	Send(data []byte, n int) error //发送数据给客户端
 }
 
-//HandleFunc 抽象业务处理方法(参数为一个请求模块接口)
+//HandleFunc 抽象业务处理方法(参数为请求接口)
 type HandleFunc func(IRequest) error
