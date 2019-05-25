@@ -25,28 +25,31 @@ import (
 	"tinyserver/tsnet"
 )
 
+//客户端消息ID为1时对应的路由:
+
 //自定义一个路由继承自BaseRouter
-type pingRouter struct {
+type hiRouter struct {
 	tsnet.BaseRouter
 }
 
 //通过自定义路由进行重写以实现业务方法
-func (rp *pingRouter) PreHandler(request tsinterface.IRequest) {
-	_, err := request.GetConnection().GetTCPConn().Write([]byte("重写后的PreHandler..."))
+func (rp *hiRouter) Handler(request tsinterface.IRequest) {
+	err := request.GetConnection().Send(100, []byte("重写后的Handler... Hi~"))
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func (rp *pingRouter) Handler(request tsinterface.IRequest) {
-	_, err := request.GetConnection().GetTCPConn().Write([]byte("重写后的Handler..."))
-	if err != nil {
-		fmt.Println(err)
-	}
+//客户端消息ID为2时对应的路由:
+
+//自定义一个路由继承自BaseRouter
+type helloRouter struct {
+	tsnet.BaseRouter
 }
 
-func (rp *pingRouter) PostHandler(request tsinterface.IRequest) {
-	_, err := request.GetConnection().GetTCPConn().Write([]byte("重写后的PostHandler..."))
+//通过自定义路由进行重写以实现业务方法
+func (rp *helloRouter) Handler(request tsinterface.IRequest) {
+	err := request.GetConnection().Send(200, []byte("重写后的Handler... Hello~"))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -56,8 +59,9 @@ func main() {
 	//创建一个server
 	s := tsnet.NewServer("demo")
 
-	//添加一个自定义路由
-	s.AddRouter(&pingRouter{})
+	//添加自定义路由：客户端发送不同的消息，服务器根据消息处理不同的业务
+	s.AddRouter(1, &hiRouter{})    //发送消息ID为1时对应的路由
+	s.AddRouter(2, &helloRouter{}) //发送消息ID为2时对应的路由
 
 	//让server对象启动服务
 	s.Serve()
