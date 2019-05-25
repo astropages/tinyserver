@@ -13,21 +13,21 @@ import (
 
 //Server 服务器类
 type Server struct {
-	IPVersion string              //连接类型
-	IP        string              //IP地址
-	Port      int                 //服务器端口
-	Name      string              //服务器名称
-	Router    tsinterface.IRouter //路由属性
+	IPVersion  string                  //连接类型
+	IP         string                  //IP地址
+	Port       int                     //服务器端口
+	Name       string                  //服务器名称
+	MsgHandler tsinterface.IMsgHandler //消息路由
 }
 
 //NewServer 初始化服务器对象
 func NewServer(name string) tsinterface.Iserver {
 	s := &Server{
-		IPVersion: "tcp4",
-		IP:        utils.GloalObject.Host,
-		Port:      utils.GloalObject.Port,
-		Name:      utils.GloalObject.Name,
-		Router:    nil,
+		IPVersion:  "tcp4",
+		IP:         utils.GloalObject.Host,
+		Port:       utils.GloalObject.Port,
+		Name:       utils.GloalObject.Name,
+		MsgHandler: NewMsgHandler(), //初始化一个消息路由对象
 	}
 	return s
 }
@@ -65,8 +65,8 @@ func (s *Server) Start() {
 				continue
 			}
 
-			//创建一个Connection对象（将原生Conn和路由绑定）
-			dealConn := NewConnection(conn, cid, s.Router)
+			//创建一个Connection对象（将原生Conn和消息控制器路由对象绑定）
+			dealConn := NewConnection(conn, cid, s.MsgHandler)
 			cid++
 
 			//连接建立
@@ -91,6 +91,8 @@ func (s *Server) Serve() {
 }
 
 //AddRouter 添加路由的接口方法
-func (s *Server) AddRouter(router tsinterface.IRouter) {
-	s.Router = router
+func (s *Server) AddRouter(msgID uint32, router tsinterface.IRouter) {
+	//将传递的路由添加到消息路由
+	s.MsgHandler.AddRouter(msgID, router)
+	fmt.Printf("消息%d路由添加成功", msgID)
 }

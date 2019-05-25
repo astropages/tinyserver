@@ -11,16 +11,14 @@ import (
 //Request 请求类
 type Request struct {
 	conn tsinterface.IConnection //连接信息
-	data []byte                  //数据内容
-	len  int                     //数据长度
+	msg  tsinterface.IMessage    //客户发送的消息
 }
 
 //NewRequest 初始化请求对象
-func NewRequest(conn tsinterface.IConnection, data []byte, n int) tsinterface.IRequest {
+func NewRequest(conn tsinterface.IConnection, msg tsinterface.IMessage) tsinterface.IRequest {
 	req := &Request{
 		conn: conn,
-		data: data,
-		len:  n,
+		msg:  msg,
 	}
 	return req
 }
@@ -30,13 +28,7 @@ func (r *Request) GetConnection() tsinterface.IConnection {
 	return r.conn
 }
 
-//GetData 获取连接请求数据的接口方法
-func (r *Request) GetData() []byte {
-	return r.data
-}
-
-//GetDataLen 获取连接请求数据长度的接口方法
-func (r *Request) GetDataLen() int {
-
-	return r.len
+//GetMsg 获取客户端消息的接口方法
+func (r *Request) GetMsg() tsinterface.IMessage {
+	return r.msg
 }

@@ -11,5 +11,5 @@ package tsinterface
 type IDataPack interface {
 	GetHeadLen() uint32                //获取二进制包的头部长度（返回固定值8） //Datalen uint32（4字节) + ID uint32（4字节)
 	Pack(msg IMessage) ([]byte, error) //封包方法（将 Message 打包成 |datalen|dataID|data|）
-	UnPack([]byte) (IMessage, error)   //拆包方法（将|datalen|dataID|data| 拆解到 Message 结构体中）
+	UnPack([]byte) (IMessage, error)   //拆包方法（这里主要将Conn读取的head部分数据进行拆解填充到Message中，返回包含head属性的IMessage后再通过数据长度值进行二次读取Conn剩余的数据）
 }

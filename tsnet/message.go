@@ -11,6 +11,15 @@ type Message struct {
 	Data    []byte //数据
 }
 
+//NewMsgPackage 封装消息对象
+func NewMsgPackage(id uint32, data []byte) *Message {
+	return &Message{
+		ID:      id,
+		Datalen: uint32(len(data)),
+		Data:    data,
+	}
+}
+
 //GetMsgID 获取消息ID的接口方法
 func (m *Message) GetMsgID() uint32 {
 	return m.ID

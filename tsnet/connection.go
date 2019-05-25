@@ -5,28 +5,28 @@
 package tsnet
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"tinyserver/tsinterface"
-	"tinyserver/utils"
 )
 
 //Connection 连接类
 type Connection struct {
-	Conn     *net.TCPConn        //当前连接的原生套接字
-	ConnID   uint32              //连接ID
-	isClosed bool                //当前连接状态
-	Router   tsinterface.IRouter //当前连接绑定的路由
+	Conn       *net.TCPConn            //当前连接的原生套接字
+	ConnID     uint32                  //连接ID
+	isClosed   bool                    //当前连接状态
+	MsgHandler tsinterface.IMsgHandler //当前连接绑定消息控制器模块（多路由）
 }
 
 //NewConnection 初始化连接对象
-func NewConnection(conn *net.TCPConn, connID uint32, router tsinterface.IRouter) tsinterface.IConnection {
+func NewConnection(conn *net.TCPConn, connID uint32, handler tsinterface.IMsgHandler) tsinterface.IConnection {
 	c := &Connection{
-		Conn:     conn,
-		ConnID:   connID,
-		isClosed: false,
-		Router:   router,
+		Conn:       conn,
+		ConnID:     connID,
+		isClosed:   false,
+		MsgHandler: handler,
 	}
 	return c
 }
@@ -39,26 +39,38 @@ func (c *Connection) StartReader() {
 
 	//接收客户端数据
 	for {
-		//读取数据
-		buf := make([]byte, utils.GloalObject.MaxPackageSize)
-		n, err := c.Conn.Read(buf)
-		if n == 0 {
-			return
-		}
-		if err != nil && err != io.EOF {
-			fmt.Println("Read buf error", err)
-			return
-		}
 
-		//将数据封装成一个Request类的对象
-		req := NewRequest(c, buf, n)
+		//创建数据包对象
+		dp := NewDataPack()
+
+		//读取客户端消息的head部分
+		head := make([]byte, dp.GetHeadLen())
+		if _, err := io.ReadFull(c.Conn, head); err != nil { //从Conn读取数据
+			fmt.Println("io.ReadFull error", err)
+			break
+		}
+		//根据数据长度读取数据
+		msg, err := dp.UnPack(head) //将head部分填满
+		if err != nil {
+			fmt.Println("dp.UnPack error", err)
+			break
+		}
+		//再次读取
+		var data []byte
+		if msg.GetMsgLen() > 0 { //如果有数据才读取
+			data = make([]byte, msg.GetMsgLen())
+			if io.ReadFull(c.Conn, data); err != nil { //从Conn读取数据
+				fmt.Println("io.ReadFull error", err)
+				break
+			}
+		}
+		msg.SetData(data) //填充数据
+
+		//将消息封装成一个Request类的对象
+		req := NewRequest(c, msg)
 
 		//使用自定义路由提供的业务方法
-		go func() {
-			c.Router.PreHandler(req)
-			c.Router.Handler(req)
-			c.Router.PostHandler(req)
-		}()
+		go c.MsgHandler.DoMsgHandler(req)
 	}
 }
 
@@ -101,8 +113,21 @@ func (c *Connection) GetRemoteAddr() net.Addr {
 }
 
 //Send 发送数据给客户端的接口方法
-func (c *Connection) Send(data []byte, n int) error {
-	if _, err := c.Conn.Write(data[:n]); err != nil {
+func (c *Connection) Send(msgID uint32, msgData []byte) error {
+	if c.isClosed == true {
+		return errors.New("Conn is Closed")
+	}
+	//封装成Message
+	dp := NewDataPack()
+
+	binaryMsg, err := dp.Pack(NewMsgPackage(msgID, msgData))
+	if err != nil {
+		fmt.Println("dp.Pack error", err)
+		return nil
+	}
+
+	//将Message发给客户端
+	if _, err := c.Conn.Write(binaryMsg); err != nil {
 		fmt.Println("Write data error", err)
 		return err
 	}

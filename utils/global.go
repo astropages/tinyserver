@@ -22,7 +22,7 @@ var GloalObject *Global
 func (g *Global) LoadConfig() {
 	data, err := ioutil.ReadFile("config/tinyserver.json")
 	if err != nil {
-		log.Fatalln(err)
+		return
 	}
 	err = json.Unmarshal(data, &GloalObject) //解析json内容到全局变量
 	if err != nil {

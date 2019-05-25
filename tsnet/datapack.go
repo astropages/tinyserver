@@ -48,26 +48,25 @@ func (d *DataPack) Pack(msg tsinterface.IMessage) ([]byte, error) {
 	return dataBuffer.Bytes(), nil
 }
 
-//UnPack 拆包的接口方法（将|datalen|dataID|data| 拆解到 Message 结构体中）
-func (d *DataPack) UnPack(binaeyData []byte) (tsinterface.IMessage, error) {
-	//解包需分两次（获取head部分（Datalen和ID），获取data部分（data））
-	//第一次读取固定的长度8字节，第二次是根据Datalen再次读取data
+//UnPack 拆包的接口方法（这里主要将Conn读取的head部分数据进行拆解填充到Message中，返回包含head属性的IMessage后再通过数据长度值进行二次读取Conn剩余的数据）
+func (d *DataPack) UnPack(binaryData []byte) (tsinterface.IMessage, error) {
+	//拆包需分两次（获取head部分（Datalen和ID），获取data部分（data）），这里接收head部分的数据（只包含数据长度和消息ID）并填充到Message的Datalen和ID属性中，然后返回一个只包含head部分的IMessage
 
-	msg := &Message{} //msgHead.Datalen, msgHead.dataID
+	msgHead := &Message{} //msgHead.Datalen, msgHead.dataID
 
 	//创建一个读取二进制数据流的阅读器
-	buff := bytes.NewReader(binaeyData)
+	reader := bytes.NewReader(binaryData)
 
 	//读取二进数据制流：先读取Datalen到msg的DataLen属性中
-	if err := binary.Read(buff, binary.LittleEndian, &msg.Datalen); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &msgHead.Datalen); err != nil {
 		return nil, err
 	}
 
 	//读取二进数据制流：再读取ID到msg的ID属性中
-	if err := binary.Read(buff, binary.LittleEndian, &msg.ID); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &msgHead.ID); err != nil {
 		return nil, err
 	}
 
 	//返回一个IMessage
-	return msg, nil
+	return msgHead, nil
 }

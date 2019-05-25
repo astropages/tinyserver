@@ -1,5 +1,5 @@
 /*
-	路由模块应用层
+	基础路由模块应用层
 */
 
 package tsnet
@@ -8,7 +8,7 @@ import (
 	"tinyserver/tsinterface"
 )
 
-//BaseRouter 路由类
+//BaseRouter 基础路由类
 type BaseRouter struct {
 }
 

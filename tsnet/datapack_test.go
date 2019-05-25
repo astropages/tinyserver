@@ -38,35 +38,35 @@ func TestDataPack(t *testing.T) {
 				for {
 					//读取head部分
 					head := make([]byte, dp.GetHeadLen()) //8个字节
-					_, err := io.ReadFull(*conn, head)    //ReadFull读取直到head填满才会返回，否则会阻塞
+					_, err := io.ReadFull(*conn, head)    //从Conn读取：ReadFull读取直到head填满才会返回，否则会阻塞
 					if err != nil {
 						fmt.Println("io.ReadFull error", err)
 						return
 					}
 
-					//解包
+					//拆包
 
-					//先把数据填充到Datalen和ID属性中
-					msg, err := dp.UnPack(head)
+					//通过拆包方法把head部分数据填充到Datalen和ID属性中
+					msgHead, err := dp.UnPack(head)
 					if err != nil {
 						fmt.Println("dp.UnPack error ", err)
 						return
 					}
 					//判断是否有数据，如果数据有内容则需要二次读取
-					if msg.GetMsgLen() > 0 {
-						//由于msg是IMessage类型，因此需要通过断言转换为Message对象
-						message := msg.(*Message)
+					if msgHead.GetMsgLen() > 0 {
+						//由于msgHead是IMessage类型，因此通过接口类型断言向下转换为Message对象
+						msg := msgHead.(*Message)
 						//给message开辟空间，长度为head中保存的值
-						message.Data = make([]byte, message.GetMsgLen())
+						msg.Data = make([]byte, msg.GetMsgLen())
 						//根据数据长度进行读取
-						_, err := io.ReadFull(*conn, message.Data)
+						_, err := io.ReadFull(*conn, msg.Data) //从Conn读取数据
 						if err != nil {
 							fmt.Println("io.ReadFull error ", err)
 							return
 						}
 
 						//打印数据
-						fmt.Printf("数据%d: %s (长度为%d)\n", message.ID, string(message.Data), message.Datalen)
+						fmt.Printf("数据%d: %s (长度为%d)\n", msg.ID, string(msg.Data), msg.Datalen)
 					}
 				}
 			}(&conn)

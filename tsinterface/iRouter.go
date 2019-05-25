@@ -1,10 +1,10 @@
 /*
-	路由模块抽象层
+	基础路由模块抽象层
 */
 
 package tsinterface
 
-//IRouter 路由接口
+//IRouter 基础路由接口
 type IRouter interface {
 	PreHandler(request IRequest)  //处理业务之前的方法
 	Handler(request IRequest)     //处理业务的方法
