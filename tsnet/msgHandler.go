@@ -7,17 +7,24 @@ package tsnet
 import (
 	"fmt"
 	"tinyserver/tsinterface"
+	"tinyserver/utils"
 )
 
 //MsgHandler 消息路由类
 type MsgHandler struct {
-	Apis map[uint32]tsinterface.IRouter //存放消息ID和其对应路由的map集合
+	Apis             map[uint32]tsinterface.IRouter //存放消息ID和其对应路由的map集合
+	TaskQueue        []chan tsinterface.IRequest    //消息队列：一个消息队列对应一个Worker
+	WorkerPoolSize   uint32                         //Woker工作池的Worker数量
+	MaxWorkerTaskLen uint32                         //每个Worker处理的最大任务数量
 }
 
 //NewMsgHandler 初始化消息路由对象
 func NewMsgHandler() tsinterface.IMsgHandler {
 	return &MsgHandler{
-		Apis: make(map[uint32]tsinterface.IRouter), //给map开辟空间
+		Apis:             make(map[uint32]tsinterface.IRouter), //给map开辟空间
+		TaskQueue:        make([]chan tsinterface.IRequest, utils.GloalObject.WorkerPoolSize),
+		WorkerPoolSize:   utils.GloalObject.WorkerPoolSize,
+		MaxWorkerTaskLen: utils.GloalObject.MaxWorkerTaskLen,
 	}
 }
 
@@ -44,4 +51,38 @@ func (mh *MsgHandler) DoMsgHandler(request tsinterface.IRequest) {
 	router.PreHandler(request)
 	router.Handler(request)
 	router.PostHandler(request)
+}
+
+//StarOneWorker 3: Worker业务
+func (mh *MsgHandler) StarOneWorker(workerID int, taskQueue chan tsinterface.IRequest) {
+	fmt.Printf("工作池：Worker %d 已开始工作\n", workerID)
+
+	//循环阻塞等待接收管道发送的消息
+	for {
+		select {
+		case req := <-taskQueue:
+			mh.DoMsgHandler(req) //使用路由调度方法处理业务
+		}
+	}
+
+}
+
+//StartWorkerPool 1: 启动工作池的接口方法（服务器启动时开启）
+func (mh *MsgHandler) StartWorkerPool() {
+	fmt.Println("工作池启动中")
+
+	//根据配置的工作池的Worker数量分别开辟管道空间（给每个worker对应的消息队列都开辟一个管道）
+	for i := 0; i < int(mh.WorkerPoolSize); i++ {
+		mh.TaskQueue[i] = make(chan tsinterface.IRequest)
+		//为每一个Worker开启一个goroutine
+		go mh.StarOneWorker(i, mh.TaskQueue[i])
+	}
+}
+
+//SendMsgTOTaskQueue 2: 将消息添加到消息队列的接口方法
+func (mh *MsgHandler) SendMsgTOTaskQueue(request tsinterface.IRequest) {
+	//将Worker和request一一对应绑定来进行任务平均分配
+	workerID := request.GetConnection().GetConnID() % mh.WorkerPoolSize
+	//将request发送到消息队列（ConnID为10,11,12的消息分别对应Worker0,Worker1,Worker2...）
+	mh.TaskQueue[workerID] <- request
 }

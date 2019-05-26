@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"tinyserver/tsinterface"
+	"tinyserver/utils"
 )
 
 //Connection 连接类
@@ -73,8 +74,14 @@ func (c *Connection) StartReader() {
 		//将消息封装成一个Request类的对象
 		req := NewRequest(c, msg)
 
-		//使用自定义路由提供的业务方法
-		go c.MsgHandler.DoMsgHandler(req)
+		//如果开启了工作池：将Request对象交给工作池来处理
+		if utils.GloalObject.WorkerPoolSize > 0 {
+			c.MsgHandler.SendMsgTOTaskQueue(req) //发送到消息队列
+		} else {
+			//如果没开启工作池：
+			go c.MsgHandler.DoMsgHandler(req) //使用自定义路由提供的业务方法
+		}
+
 	}
 }
 

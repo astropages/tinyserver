@@ -36,6 +36,9 @@ func NewServer(name string) tsinterface.Iserver {
 func (s *Server) Start() {
 	fmt.Printf("服务器%s启动中\n", s.Name)
 
+	//启动工作池
+	s.MsgHandler.StartWorkerPool()
+
 	//创建服务器socket（TCP address）
 	addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 	if err != nil {
