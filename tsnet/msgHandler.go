@@ -53,11 +53,11 @@ func (mh *MsgHandler) DoMsgHandler(request tsinterface.IRequest) {
 	router.PostHandler(request)
 }
 
-//StarOneWorker 3: Worker业务
+//StarOneWorker 3: Worker工作业务
 func (mh *MsgHandler) StarOneWorker(workerID int, taskQueue chan tsinterface.IRequest) {
 	fmt.Printf("工作池：Worker %d 已开始工作\n", workerID)
 
-	//循环阻塞等待接收管道发送的消息
+	//循环阻塞：等待接收来自消息队列管道的IRequest消息
 	for {
 		select {
 		case req := <-taskQueue:
@@ -74,7 +74,7 @@ func (mh *MsgHandler) StartWorkerPool() {
 	//根据配置的工作池的Worker数量分别开辟管道空间（给每个worker对应的消息队列都开辟一个管道）
 	for i := 0; i < int(mh.WorkerPoolSize); i++ {
 		mh.TaskQueue[i] = make(chan tsinterface.IRequest)
-		//为每一个Worker开启一个goroutine
+		//为每一个Worker开启一个goroutine进行工作
 		go mh.StarOneWorker(i, mh.TaskQueue[i])
 	}
 }
@@ -83,6 +83,6 @@ func (mh *MsgHandler) StartWorkerPool() {
 func (mh *MsgHandler) SendMsgTOTaskQueue(request tsinterface.IRequest) {
 	//将Worker和request一一对应绑定来进行任务平均分配
 	workerID := request.GetConnection().GetConnID() % mh.WorkerPoolSize
-	//将request发送到消息队列（ConnID为10,11,12的消息分别对应Worker0,Worker1,Worker2...）
+	//将request发送到绑定了Worker的消息队列（ConnID为10,11,12的消息队列分别对应Worker0,Worker1,Worker2...）
 	mh.TaskQueue[workerID] <- request
 }
