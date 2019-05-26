@@ -15,6 +15,7 @@ type Global struct {
 	MaxPackageSize   uint32 //每次Read的最大长度
 	WorkerPoolSize   uint32 //服务器Worker工作池的Worker数量
 	MaxWorkerTaskLen uint32 //每个Worker处理的最大任务数量
+	MaxConn          uint32 //服务器最大连接数
 }
 
 //GloalObject 定义全局对象
@@ -43,6 +44,7 @@ func init() {
 		MaxPackageSize:   512,
 		WorkerPoolSize:   10,
 		MaxWorkerTaskLen: 1000,
+		MaxConn:          10000,
 	}
 
 	//加载自定义配置

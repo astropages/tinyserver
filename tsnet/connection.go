@@ -15,6 +15,7 @@ import (
 
 //Connection 连接类
 type Connection struct {
+	Server     tsinterface.IServer     //当前连接所属服务器
 	Conn       *net.TCPConn            //当前连接的原生套接字
 	ConnID     uint32                  //连接ID
 	isClosed   bool                    //当前连接状态
@@ -24,8 +25,9 @@ type Connection struct {
 }
 
 //NewConnection 初始化连接对象
-func NewConnection(conn *net.TCPConn, connID uint32, handler tsinterface.IMsgHandler) tsinterface.IConnection {
+func NewConnection(server tsinterface.IServer, conn *net.TCPConn, connID uint32, handler tsinterface.IMsgHandler) tsinterface.IConnection {
 	c := &Connection{
+		Server:     server,
 		Conn:       conn,
 		ConnID:     connID,
 		isClosed:   false,
@@ -33,6 +35,8 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler tsinterface.IMsgHan
 		msgChan:    make(chan []byte),
 		exitChan:   make(chan bool),
 	}
+	c.Server.GetConnMgr().Add(c) //将连接添加到该服务器的连接管理中
+
 	return c
 }
 
@@ -130,6 +134,9 @@ func (c *Connection) Stop() {
 
 	//关闭原生套接字
 	c.Conn.Close()
+
+	//将连接从服务器连接管理模块删除
+	c.Server.GetConnMgr().Remove(c.ConnID)
 
 	//释放channel资源
 	close(c.msgChan)

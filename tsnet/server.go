@@ -13,21 +13,23 @@ import (
 
 //Server 服务器类
 type Server struct {
-	IPVersion  string                  //连接类型
-	IP         string                  //IP地址
-	Port       int                     //服务器端口
-	Name       string                  //服务器名称
-	MsgHandler tsinterface.IMsgHandler //消息路由
+	IPVersion  string                   //连接类型
+	IP         string                   //IP地址
+	Port       int                      //服务器端口
+	Name       string                   //服务器名称
+	MsgHandler tsinterface.IMsgHandler  //消息路由
+	connMgr    tsinterface.IConnManager //连接管理
 }
 
 //NewServer 初始化服务器对象
-func NewServer(name string) tsinterface.Iserver {
+func NewServer(name string) tsinterface.IServer {
 	s := &Server{
 		IPVersion:  "tcp4",
 		IP:         utils.GloalObject.Host,
 		Port:       utils.GloalObject.Port,
 		Name:       utils.GloalObject.Name,
-		MsgHandler: NewMsgHandler(), //初始化一个消息路由对象
+		MsgHandler: NewMsgHandler(),  //初始化一个消息路由对象
+		connMgr:    NewConnManager(), //初始化一个连接管理对象
 	}
 	return s
 }
@@ -68,9 +70,15 @@ func (s *Server) Start() {
 				continue
 			}
 
+			//判断服务器连接数是否已超过配置的最大值
+			if uint32(s.connMgr.Len()) >= utils.GloalObject.MaxConn {
+				fmt.Println("超出服务器最大连接数")
+				conn.Close() //关闭Conn
+				continue     //跳出循环
+			}
 			//创建一个Connection对象（将原生Conn和消息控制器路由对象绑定）
-			dealConn := NewConnection(conn, cid, s.MsgHandler)
-			cid++
+			dealConn := NewConnection(s, conn, cid, s.MsgHandler)
+			cid++ //ID加1
 
 			//连接建立
 			go dealConn.Start()
@@ -81,7 +89,8 @@ func (s *Server) Start() {
 
 //Stop 停止服务器的接口方法
 func (s *Server) Stop() {
-
+	//清空全部链接
+	s.connMgr.ClearConn()
 }
 
 //Serve 运行服务器的接口方法
@@ -97,4 +106,9 @@ func (s *Server) Serve() {
 func (s *Server) AddRouter(msgID uint32, router tsinterface.IRouter) {
 	//将传递的路由添加到消息路由
 	s.MsgHandler.AddRouter(msgID, router)
+}
+
+//GetConnMgr 获取连接管理模块的接口方法
+func (s *Server) GetConnMgr() tsinterface.IConnManager {
+	return s.connMgr
 }
