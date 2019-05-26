@@ -13,12 +13,14 @@ import (
 
 //Server 服务器类
 type Server struct {
-	IPVersion  string                   //连接类型
-	IP         string                   //IP地址
-	Port       int                      //服务器端口
-	Name       string                   //服务器名称
-	MsgHandler tsinterface.IMsgHandler  //消息路由
-	connMgr    tsinterface.IConnManager //连接管理
+	IPVersion   string                             //连接类型
+	IP          string                             //IP地址
+	Port        int                                //服务器端口
+	Name        string                             //服务器名称
+	MsgHandler  tsinterface.IMsgHandler            //消息路由
+	connMgr     tsinterface.IConnManager           //连接管理
+	OnConnStart func(conn tsinterface.IConnection) //建立连接之后的自动Hook函数
+	OnConnStop  func(conn tsinterface.IConnection) //断开连接之前的自动Hook函数
 }
 
 //NewServer 初始化服务器对象
@@ -111,4 +113,28 @@ func (s *Server) AddRouter(msgID uint32, router tsinterface.IRouter) {
 //GetConnMgr 获取连接管理模块的接口方法
 func (s *Server) GetConnMgr() tsinterface.IConnManager {
 	return s.connMgr
+}
+
+//AddOnConnStart 注册建立连接之后的自动Hook函数的接口方法
+func (s *Server) AddOnConnStart(hookFunc func(conn tsinterface.IConnection)) {
+	s.OnConnStart = hookFunc
+}
+
+//AddOnConnStop 注册断开连接之前自动Hook函数的接口方法
+func (s *Server) AddOnConnStop(hookFunc func(conn tsinterface.IConnection)) {
+	s.OnConnStop = hookFunc
+}
+
+//CallOnConnStar 调用建立连接之后的自动Hook函数的接口方法
+func (s *Server) CallOnConnStar(conn tsinterface.IConnection) {
+	if s.OnConnStart != nil {
+		s.OnConnStart(conn)
+	}
+}
+
+//CallOnConnStop 调用断开连接之前的自动Hook函数的接口方法
+func (s *Server) CallOnConnStop(conn tsinterface.IConnection) {
+	if s.OnConnStart != nil {
+		s.OnConnStop(conn)
+	}
 }

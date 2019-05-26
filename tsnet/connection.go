@@ -118,10 +118,15 @@ func (c *Connection) Start() {
 	//写业务
 	go c.StartWriter()
 
+	//
+	c.Server.CallOnConnStar(c)
 }
 
 //Stop 关闭连接的接口方法
 func (c *Connection) Stop() {
+
+	//c
+	c.Server.CallOnConnStop(c)
 
 	//回收工作
 	if c.isClosed == true {
