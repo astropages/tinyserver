@@ -55,11 +55,32 @@ func (rp *helloRouter) Handler(request tsinterface.IRequest) {
 	}
 }
 
+//Hook函数：
+
+//welcome ...
+func welcome(conn tsinterface.IConnection) {
+	fmt.Printf("连接%d即将连接\n", conn.GetConnID())
+	if err := conn.Send(201, []byte(fmt.Sprintf("欢迎连接%d", conn.GetConnID()))); err != nil {
+		fmt.Println(err)
+	}
+}
+
+//bye ...
+func bye(conn tsinterface.IConnection) {
+	fmt.Printf("连接%d即将断开\n", conn.GetConnID())
+}
+
 func main() {
 	//创建一个server
 	s := tsnet.NewServer("demo")
 
-	//添加自定义路由：客户端发送不同的消息，服务器根据消息处理不同的业务
+	//注册建立连接之后的Hook函数
+	s.AddOnConnStart(welcome)
+
+	//注册断开连接之前的Hook函数
+	s.AddOnConnStop(bye)
+
+	//注册自定义路由：客户端发送不同的消息，服务器根据消息处理不同的业务
 	s.AddRouter(1, &hiRouter{})    //发送消息ID为1时对应的路由
 	s.AddRouter(2, &helloRouter{}) //发送消息ID为2时对应的路由
 
