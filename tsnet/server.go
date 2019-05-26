@@ -94,5 +94,4 @@ func (s *Server) Serve() {
 func (s *Server) AddRouter(msgID uint32, router tsinterface.IRouter) {
 	//将传递的路由添加到消息路由
 	s.MsgHandler.AddRouter(msgID, router)
-	fmt.Printf("消息%d路由添加成功", msgID)
 }

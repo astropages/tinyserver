@@ -18,6 +18,8 @@ type Connection struct {
 	ConnID     uint32                  //连接ID
 	isClosed   bool                    //当前连接状态
 	MsgHandler tsinterface.IMsgHandler //当前连接绑定消息控制器模块（多路由）
+	msgChan    chan []byte             //消息通信管道
+	exitChan   chan bool               //退出通信管道
 }
 
 //NewConnection 初始化连接对象
@@ -27,6 +29,8 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler tsinterface.IMsgHan
 		ConnID:     connID,
 		isClosed:   false,
 		MsgHandler: handler,
+		msgChan:    make(chan []byte),
+		exitChan:   make(chan bool),
 	}
 	return c
 }
@@ -34,7 +38,7 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler tsinterface.IMsgHan
 //StartReader 针对连接的读方法
 func (c *Connection) StartReader() {
 	fmt.Printf("连接%d准备就绪（读）\n", c.ConnID)
-	defer fmt.Printf("连接%d已关闭\n", c.ConnID)
+	defer fmt.Printf("连接%d已关闭（读）\n", c.ConnID)
 	defer c.Stop() //关闭连接
 
 	//接收客户端数据
@@ -74,6 +78,26 @@ func (c *Connection) StartReader() {
 	}
 }
 
+//StartWriter 给客户端写消息的方法
+func (c *Connection) StartWriter() {
+	fmt.Printf("连接%d准备就绪（写）\n", c.ConnID)
+	defer fmt.Printf("连接%d已关闭（写）\n", c.ConnID)
+
+	//IO多路复用
+	for {
+		select {
+		case data := <-c.msgChan: //判断是否有数据传入
+			if _, err := c.Conn.Write(data); err != nil {
+				fmt.Println("c.Conn.Write error", err)
+				return
+			}
+
+		case <-c.exitChan: //监听退出通信管道
+			return
+		}
+	}
+}
+
 //Start 开启连接的接口方法
 func (c *Connection) Start() {
 
@@ -81,6 +105,7 @@ func (c *Connection) Start() {
 	go c.StartReader()
 
 	//写业务
+	go c.StartWriter()
 
 }
 
@@ -93,8 +118,15 @@ func (c *Connection) Stop() {
 	}
 	c.isClosed = true
 
+	//向Writer发出退出信息
+	c.exitChan <- true
+
 	//关闭原生套接字
 	c.Conn.Close()
+
+	//释放channel资源
+	close(c.msgChan)
+	close(c.exitChan)
 }
 
 //GetConnID 获取连接ID的接口方法
@@ -126,10 +158,8 @@ func (c *Connection) Send(msgID uint32, msgData []byte) error {
 		return nil
 	}
 
-	//将Message发给客户端
-	if _, err := c.Conn.Write(binaryMsg); err != nil {
-		fmt.Println("Write data error", err)
-		return err
-	}
+	//将Message通过管道发送给Writer
+	c.msgChan <- binaryMsg
+
 	return nil
 }
