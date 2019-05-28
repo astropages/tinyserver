@@ -63,11 +63,18 @@ func welcome(conn tsinterface.IConnection) {
 	if err := conn.Send(201, []byte(fmt.Sprintf("欢迎连接%d", conn.GetConnID()))); err != nil {
 		fmt.Println(err)
 	}
+
+	conn.SetProperty("Name", "tsc1") //给当前连接模块设置属性
 }
 
 //bye ...
 func bye(conn tsinterface.IConnection) {
 	fmt.Printf("连接%d即将断开\n", conn.GetConnID())
+
+	if name, err := conn.GetProperty("Name"); err == nil {
+		fmt.Printf("%s退出了\n", name)
+	}
+
 }
 
 func main() {
@@ -76,7 +83,6 @@ func main() {
 
 	//注册建立连接之后的Hook函数
 	s.AddOnConnStart(welcome)
-
 	//注册断开连接之前的Hook函数
 	s.AddOnConnStop(bye)
 
