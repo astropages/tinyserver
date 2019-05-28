@@ -14,6 +14,10 @@ type IConnection interface {
 	GetTCPConn() *net.TCPConn                //获取原生套接字
 	GetRemoteAddr() net.Addr                 //获取客户端的IP地址
 	Send(msgID uint32, msgData []byte) error //发送数据给客户端
+
+	SetProperty(key string, value interface{})   //设置当前连接模块属性
+	GetProperty(key string) (interface{}, error) //获取当前连接模块属性
+	RemoveProperty(key string)                   //删除当前连接模块属性
 }
 
 //HandleFunc 抽象业务处理方法(参数为请求接口)

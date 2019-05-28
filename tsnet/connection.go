@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"tinyserver/tsinterface"
 	"tinyserver/utils"
 )
@@ -22,6 +23,9 @@ type Connection struct {
 	MsgHandler tsinterface.IMsgHandler //当前连接绑定消息控制器模块（多路由）
 	msgChan    chan []byte             //消息通信管道
 	exitChan   chan bool               //退出通信管道
+
+	property     map[string]interface{} //当前连接模块的属性集合
+	propertyLock sync.RWMutex           //属性锁
 }
 
 //NewConnection 初始化连接对象
@@ -34,6 +38,7 @@ func NewConnection(server tsinterface.IServer, conn *net.TCPConn, connID uint32,
 		MsgHandler: handler,
 		msgChan:    make(chan []byte),
 		exitChan:   make(chan bool),
+		property:   make(map[string]interface{}),
 	}
 	c.Server.GetConnMgr().Add(c) //将连接添加到该服务器的连接管理中
 
@@ -181,4 +186,31 @@ func (c *Connection) Send(msgID uint32, msgData []byte) error {
 	c.msgChan <- binaryMsg
 
 	return nil
+}
+
+//SetProperty 设置当前连接模块属性的接口方法
+func (c *Connection) SetProperty(key string, value interface{}) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+
+	c.property[key] = value
+}
+
+//GetProperty 获取当前连接模块属性的接口方法
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	defer c.propertyLock.RUnlock()
+
+	if value, ok := c.property[key]; ok {
+		return value, nil
+	}
+	return nil, errors.New("No this property" + key)
+}
+
+//RemoveProperty 删除当前连接模块属性的接口方法
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	c.propertyLock.Unlock()
+
+	delete(c.property, key)
 }
