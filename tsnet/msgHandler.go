@@ -45,7 +45,8 @@ func (mh *MsgHandler) DoMsgHandler(request tsinterface.IRequest) {
 	//request获取消息ID，然后获得该ID对应的路由
 	router, ok := mh.Apis[request.GetMsg().GetMsgID()]
 	if !ok {
-		fmt.Printf("消息%d路由不存在", request.GetMsg().GetMsgID())
+		fmt.Printf("消息%d路由不存在\n", request.GetMsg().GetMsgID())
+		return
 	}
 	//根据ID调用其对应路由的方法
 	router.PreHandler(request)
