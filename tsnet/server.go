@@ -134,7 +134,7 @@ func (s *Server) CallOnConnStar(conn tsinterface.IConnection) {
 
 //CallOnConnStop 调用断开连接之前的自动Hook函数的接口方法
 func (s *Server) CallOnConnStop(conn tsinterface.IConnection) {
-	if s.OnConnStart != nil {
+	if s.OnConnStop != nil {
 		s.OnConnStop(conn)
 	}
 }

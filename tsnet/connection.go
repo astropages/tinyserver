@@ -73,7 +73,7 @@ func (c *Connection) StartReader() {
 		var data []byte
 		if msg.GetMsgLen() > 0 { //如果有数据才读取
 			data = make([]byte, msg.GetMsgLen())
-			if io.ReadFull(c.Conn, data); err != nil { //从Conn读取数据
+			if _, err := io.ReadFull(c.Conn, data); err != nil { //从Conn读取数据
 				fmt.Println("io.ReadFull error", err)
 				break
 			}
@@ -85,7 +85,7 @@ func (c *Connection) StartReader() {
 
 		//如果开启了工作池：将Request对象交给工作池来处理
 		if utils.GloalObject.WorkerPoolSize > 0 {
-			c.MsgHandler.SendMsgTOTaskQueue(req) //发送到消息队列
+			c.MsgHandler.SendMsgToTaskQueue(req) //发送到消息队列
 		} else {
 			//如果没开启工作池：
 			go c.MsgHandler.DoMsgHandler(req) //使用自定义路由提供的业务方法
@@ -130,7 +130,7 @@ func (c *Connection) Start() {
 //Stop 关闭连接的接口方法
 func (c *Connection) Stop() {
 
-	//c
+	//调用销毁断开前用户自定义的Hook函数
 	c.Server.CallOnConnStop(c)
 
 	//回收工作

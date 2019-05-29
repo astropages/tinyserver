@@ -79,8 +79,8 @@ func (mh *MsgHandler) StartWorkerPool() {
 	}
 }
 
-//SendMsgTOTaskQueue 2: 将消息添加到消息队列的接口方法
-func (mh *MsgHandler) SendMsgTOTaskQueue(request tsinterface.IRequest) {
+//SendMsgToTaskQueue 2: 将消息添加到消息队列的接口方法
+func (mh *MsgHandler) SendMsgToTaskQueue(request tsinterface.IRequest) {
 	//将Worker和request一一对应绑定来进行任务平均分配
 	workerID := request.GetConnection().GetConnID() % mh.WorkerPoolSize
 	//将request发送到绑定了Worker的消息队列（ConnID为10,11,12的消息队列分别对应Worker0,Worker1,Worker2...）
