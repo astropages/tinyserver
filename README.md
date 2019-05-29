@@ -5,7 +5,7 @@ Demo：
 
 - demoServer.go
 
-- config
+- conf
   - tinyserver.json
 
 

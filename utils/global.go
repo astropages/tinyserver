@@ -23,7 +23,7 @@ var GloalObject *Global
 
 //LoadConfig 加载文件的方法
 func (g *Global) LoadConfig() {
-	data, err := ioutil.ReadFile("config/tinyserver.json")
+	data, err := ioutil.ReadFile("conf/tinyserver.json")
 	if err != nil {
 		return
 	}
