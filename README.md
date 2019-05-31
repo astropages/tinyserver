@@ -115,3 +115,78 @@ func main() {
 }
 ```
 
+
+
+------
+
+
+
+*demoClient.go*
+
+```go
+package main
+
+import (
+	"fmt"
+	"io"
+	"net"
+	"time"
+	"tinyserver/tsnet"
+)
+
+func main() {
+
+	fmt.Println("客户端启动中")
+	//3秒之后发起请求，给服务端开启服务的机会
+	time.Sleep(3 * time.Second)
+
+	conn, err := net.Dial("tcp", "127.0.0.1:9999")
+	if err != nil {
+		fmt.Println("Dial error", err)
+		return
+	}
+
+	//读写测试
+	for {
+
+		dp := tsnet.NewDataPack()
+
+		binaryMsg, err := dp.Pack(tsnet.NewMsgPackage(2, []byte("test")))
+		if err != nil {
+			fmt.Println("dp.Pack error", err)
+			return
+		}
+
+		if _, err := conn.Write(binaryMsg); err != nil {
+			fmt.Println("conn.Write error", err)
+			return
+		}
+
+		//解析服务器回发的数据包
+		head := make([]byte, dp.GetHeadLen())
+		if _, err := io.ReadFull(conn, head); err != nil {
+			fmt.Println("io.ReadFull( error", err)
+			return
+		}
+
+		//通过拆包方法把head部分数据填充到Datalen和ID属性中
+		msgHead, err := dp.UnPack(head)
+
+		//判断数据长度后读取数据
+		if msgHead.GetMsgLen() > 0 {
+			msg := msgHead.(*tsnet.Message) //通过接口类型断言向下转换为Message对象
+			msg.Data = make([]byte, msg.GetMsgLen())
+			if _, err := io.ReadFull(conn, msg.Data); err != nil {
+				fmt.Println("io.ReadFull( error", err)
+				return
+			}
+			//打印服务器回发的数据
+			fmt.Printf("服务器数据%d: %s (长度为%d)\n", msg.ID, string(msg.Data), msg.Datalen)
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+}
+
+```
+
