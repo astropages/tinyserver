@@ -10,7 +10,9 @@ Demo：
 
 
 
-*demoServe.go*
+
+
+*demoServer.go*
 
 ```go
 /*
@@ -94,5 +96,22 @@ func main() {
 	s.Serve()
 }
 
+```
+
+
+
+*conf/tinyserver.json*
+
+```json
+{
+  "Host": "127.0.0.1",
+	"Port": 9999,
+	"Name": "tinyserver",
+	"Version": "0.1",
+	"MaxPackageSize": 512,
+	"WorkerPoolSize": 10,
+	"MaxWorkerTaskLen": 1000,
+	"MaxConn": 2
+}
 ```
 
