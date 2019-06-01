@@ -1,14 +1,14 @@
 # tinyserver
 GO并发服务器框架
 
-Demo：
+
+
+Demo Server:
 
 - demoServer.go
 
 - conf
   - tinyserver.json
-
-
 
 
 
@@ -118,6 +118,12 @@ func main() {
 
 
 ------
+
+
+
+Demo Client:
+
+* demoClient.go
 
 
 
